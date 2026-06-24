@@ -848,7 +848,7 @@ export default function SudsApp() {
                             const esSeco = secos.includes(meses[i].toLowerCase().slice(0,3));
                             return (
                               <div key={i} style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", justifyContent:"flex-end"}}>
-                                <span style={{fontSize:"7px", fontWeight:600, color: esSeco ? "#b45309" : "#0F6E56"}}>{mm}</span>
+                                <span style={{fontSize:"10px", fontWeight:600, color: esSeco ? "#b45309" : "#0F6E56"}}>{mm}</span>
                                 <div style={{
                                   width:"100%",
                                   height: barH + "px",

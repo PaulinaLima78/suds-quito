@@ -837,36 +837,37 @@ export default function SudsApp() {
                   {(() => {
                     const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
                     const maxMm = Math.max(...station.climatologia);
-                    const secos = ["junio","julio","agosto","septiembre"];
+                    const CHART_H = 120; // px altura máxima de barra
+                    const secos = ["jun","jul","ago","sep"];
                     return (
                       <div>
-                        <div className="flex items-end gap-1 h-32 mb-1">
+                        <p className="text-xs text-[#1F2A24]/40 mb-3">Lluvia acumulada mensual promedio (mm/mes) · serie 2020-2026</p>
+                        <div style={{display:"flex", alignItems:"flex-end", gap:"4px", height: CHART_H + 20 + "px", marginBottom:"4px"}}>
                           {station.climatologia.map((mm, i) => {
-                            const pct = (mm / maxMm) * 100;
-                            const esSeco = secos.includes(meses[i].toLowerCase()) ||
-                              meses[i].toLowerCase().startsWith(station.mesSeco.slice(0,3).toLowerCase());
+                            const barH = Math.max(Math.round((mm / maxMm) * CHART_H), 3);
+                            const esSeco = secos.includes(meses[i].toLowerCase().slice(0,3));
                             return (
-                              <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                                <span className="text-xs font-medium" style={{color: esSeco ? "#b45309" : "#0F6E56", fontSize:"8px"}}>{fmt(mm,0)}</span>
-                                <div className="w-full rounded-t" style={{
-                                  height: `${Math.max(pct, 3)}%`,
+                              <div key={i} style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"2px", justifyContent:"flex-end"}}>
+                                <span style={{fontSize:"7px", fontWeight:600, color: esSeco ? "#b45309" : "#0F6E56"}}>{mm}</span>
+                                <div style={{
+                                  width:"100%",
+                                  height: barH + "px",
                                   background: esSeco ? "#fbbf24" : "#1D9E75",
-                                  opacity: esSeco ? 0.8 : 0.9
+                                  borderRadius:"3px 3px 0 0",
+                                  opacity: esSeco ? 0.85 : 0.9
                                 }}/>
                               </div>
                             );
                           })}
                         </div>
-                        <div className="flex gap-1">
+                        <div style={{display:"flex", gap:"4px", borderTop:"1px solid #e5e7eb", paddingTop:"4px"}}>
                           {meses.map((m, i) => (
-                            <div key={i} className="flex-1 text-center" style={{fontSize:"8px", color: "var(--color-text-secondary)"}}>
-                              {m}
-                            </div>
+                            <div key={i} style={{flex:1, textAlign:"center", fontSize:"7px", color:"#9ca3af"}}>{m}</div>
                           ))}
                         </div>
-                        <div className="flex gap-4 mt-3 text-xs text-[#1F2A24]/50">
-                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#1D9E75] inline-block"/>Temporada lluviosa</span>
-                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400 inline-block"/>Época seca (menor captación)</span>
+                        <div style={{display:"flex", gap:"16px", marginTop:"10px", fontSize:"11px", color:"#6b7280"}}>
+                          <span style={{display:"flex", alignItems:"center", gap:"4px"}}><span style={{width:"10px",height:"10px",borderRadius:"2px",background:"#1D9E75",display:"inline-block"}}/>Temporada lluviosa</span>
+                          <span style={{display:"flex", alignItems:"center", gap:"4px"}}><span style={{width:"10px",height:"10px",borderRadius:"2px",background:"#fbbf24",display:"inline-block"}}/>Época seca (jun-sep)</span>
                         </div>
                       </div>
                     );
@@ -885,26 +886,41 @@ export default function SudsApp() {
                   Distribución horaria del evento P90 observado · duración 2h · {station.name} · Hietograma real construido a partir de eventos históricos FONAG 2020-2026
                 </p>
                 <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-5">
-                  <div className="flex items-end gap-2 h-32 mb-2">
-                    {station.hietograma.map((mm, i) => {
-                      const maxMm = Math.max(...station.hietograma);
-                      const pct = maxMm > 0 ? (mm / maxMm) * 100 : 0;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-xs font-medium text-[#2F6F5E]">{fmt(mm, 1)}</span>
-                          <div className="w-full bg-[#2F6F5E] rounded-t" style={{ height: `${pct}%`, minHeight: 4 }} />
+                  {(() => {
+                    const maxMm = Math.max(...station.hietograma);
+                    const CHART_H = 120;
+                    return (
+                      <div>
+                        <p className="text-xs text-[#1F2A24]/40 mb-3">
+                          Lluvia por hora del evento P90 (mm/h) · duración {station.hietograma.length}h · total {fmt(station.p90Duracion, 1)} mm
+                        </p>
+                        <div style={{display:"flex", alignItems:"flex-end", gap:"8px", height: CHART_H + 24 + "px", marginBottom:"6px"}}>
+                          {station.hietograma.map((mm, i) => {
+                            const barH = Math.max(Math.round((mm / maxMm) * CHART_H), 4);
+                            return (
+                              <div key={i} style={{flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", justifyContent:"flex-end"}}>
+                                <span style={{fontSize:"11px", fontWeight:600, color:"#0F6E56"}}>{fmt(mm,1)}</span>
+                                <div style={{
+                                  width:"100%",
+                                  height: barH + "px",
+                                  background:"#1D9E75",
+                                  borderRadius:"4px 4px 0 0"
+                                }}/>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex gap-2">
-                    {station.hietograma.map((_, i) => (
-                      <div key={i} className="flex-1 text-center text-xs text-[#1F2A24]/40">h{i + 1}</div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-[#1F2A24]/40 mt-3 text-center">
-                    Lluvia total P90: {fmt(station.p90Duracion, 1)} mm en {station.eventDurationH} h · eje Y en mm/h
-                  </p>
+                        <div style={{display:"flex", gap:"8px", borderTop:"1px solid #e5e7eb", paddingTop:"6px"}}>
+                          {station.hietograma.map((_, i) => (
+                            <div key={i} style={{flex:1, textAlign:"center", fontSize:"11px", color:"#9ca3af"}}>h{i+1}</div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-[#1F2A24]/40 mt-3 text-center">
+                          Hietograma real observado (FONAG 2020-2026) · eje Y en mm/h
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}

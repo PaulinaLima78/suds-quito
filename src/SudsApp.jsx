@@ -2,37 +2,40 @@ import React, { useState, useMemo } from "react";
 import { Droplets, CloudRain, Layers, Box, Info, ChevronRight, AlertTriangle } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// DATA REAL — extraída de Analisis_Lluvias_Quito_COMPLETO.xlsx, hoja
-// Tabla_diseno_estacion + IDF_Gumbel, generado por el script de análisis
-// de lluvias horarias 2020-2026 (12 estaciones FONAG).
+// DATA REAL — extraída de Analisis_Lluvias_Quito_COMPLETO.xlsx
+// hojas: Tabla_diseno_estacion + IDF_Gumbel + Hietograma_diseno
+// Script análisis lluvias horarias 2020-2026 · 12 estaciones FONAG
+// Autoría metodológica: Paulina Lima
 //
-// p90Duracion: lluvia_p90_evento_mm — percentil 90 del tamaño de eventos
-//   completos de lluvia. Escenario "frecuente": control de calidad y volumen,
-//   método EPA Stormwater Capture / CIRIA SuDS Manual (C753).
-// p95Extremos: lluvia_p95_evento_mm — percentil 95 del tamaño de eventos
-//   completos. Escenario "extremo/riesgo": diseño conservador.
-// tr10_2h_mm / tr25_2h_mm: lluvia de período de retorno 10 y 25 años para
-//   duración de 2h, por ajuste de Gumbel a máximos anuales (Chow, Maidment &
-//   Mays — Applied Hydrology). Disponible como referencia adicional en vista
-//   técnica para diseño ante inundación.
-// dryHours: tiempo seco mediano entre eventos (h) — usado para ciclo de
-//   vaciado de cisternas.
-// recomendacion: clasificación de robustez de SUDS según el script
-//   (lluvia_p90_evento_mm: ≤10 liviano, ≤20 medio, ≤35 robusto, >35 crítico).
+// DOS OBJETIVOS DISTINTOS (metodología Paulina Lima):
+//
+// 1. SUDS para CAPTURA/RETENCIÓN (volumen a guardar):
+//    p90Duracion / p95Extremos = percentiles del volumen total de eventos
+//    completos de lluvia (P90/P95 de lluvia_evento_mm). Dimensionan el
+//    TAMAÑO del SUDS. Ref: EPA Stormwater Capture / CIRIA SuDS Manual C753.
+//
+// 2. GESTIÓN DE RIESGOS / ALCANTARILLADO (intensidad pico):
+//    tr2..tr25 = lluvia (mm) para período de retorno 2-25 años, duración 2h,
+//    por ajuste de distribución de Gumbel a máximos anuales móviles.
+//    int_tr2..int_tr25 = intensidad (mm/h). Dimensionan tuberías y colectores.
+//    Ref: Gumbel (1958), Chow/Maidment/Mays — Applied Hydrology.
+//    TR2-5: alcantarillado domiciliario · TR10: colectores · TR25: infraestr.
+//
+// hietograma: distribución horaria del evento P90 real observado (2h).
 // ---------------------------------------------------------------------------
 const STATIONS = [
-  { id: "rumihurco", name: "Rumihurco - Machángara", code: "P03", zona: "Sur (cuenca Machángara)", lat: -0.130678, lon: -78.526703, elevationM: 3245, p90Duracion: 20.1, p95Extremos: 30.3, tr10_2h_mm: 41.5, tr25_2h_mm: 45.5, dryHours: 16, eventDurationH: 5, recomendacion: "SUDS robusto" },
-  { id: "rumipamba", name: "Rumipamba (Bodegas)", code: "P08", zona: "Centro", lat: -0.180912, lon: -78.509943, elevationM: 3005, p90Duracion: 22.8, p95Extremos: 32.5, tr10_2h_mm: 46.0, tr25_2h_mm: 50.8, dryHours: 20, eventDurationH: 4, recomendacion: "SUDS robusto" },
-  { id: "inaquito", name: "Iñaquito (INAMHI)", code: "P09", zona: "Centro-norte", lat: -0.178354, lon: -78.487680, elevationM: 2804, p90Duracion: 18.3, p95Extremos: 26.8, tr10_2h_mm: 39.5, tr25_2h_mm: 43.8, dryHours: 17, eventDurationH: 4, recomendacion: "SUDS medio" },
-  { id: "cumbaya", name: "Cumbayá", code: "P13", zona: "Valle de Cumbayá", lat: -0.213443, lon: -78.429960, elevationM: 2339, p90Duracion: 19.7, p95Extremos: 28.4, tr10_2h_mm: 46.2, tr25_2h_mm: 50.7, dryHours: 23, eventDurationH: 3, recomendacion: "SUDS medio" },
-  { id: "izobamba", name: "Izobamba", code: "P16", zona: "Sur (rural)", lat: -0.365945, lon: -78.555140, elevationM: 3046, p90Duracion: 17.9, p95Extremos: 24.8, tr10_2h_mm: 49.7, tr25_2h_mm: 56.7, dryHours: 15, eventDurationH: 4, recomendacion: "SUDS medio" },
-  { id: "chillogallo", name: "Chillogallo", code: "P22", zona: "Sur", lat: -0.278181, lon: -78.585716, elevationM: 3202, p90Duracion: 12.3, p95Extremos: 16.8, tr10_2h_mm: 49.1, tr25_2h_mm: 59.0, dryHours: 16, eventDurationH: 4, recomendacion: "SUDS medio" },
-  { id: "atacazo", name: "Atacazo", code: "P23", zona: "Sur-occidente (ladera)", lat: -0.318317, lon: -78.601764, elevationM: 3877, p90Duracion: 16.1, p95Extremos: 22.1, tr10_2h_mm: 35.5, tr25_2h_mm: 40.1, dryHours: 13, eventDurationH: 6, recomendacion: "SUDS medio" },
-  { id: "san_francisco", name: "San Francisco", code: "P27", zona: "Centro histórico", lat: -0.202191, lon: -78.539685, elevationM: 3551, p90Duracion: 24.1, p95Extremos: 35.1, tr10_2h_mm: 42.5, tr25_2h_mm: 46.9, dryHours: 14, eventDurationH: 5, recomendacion: "SUDS robusto" },
-  { id: "tanque_solanda", name: "Tanque - Solanda", code: "P56", zona: "Sur", lat: -0.281734, lon: -78.530740, elevationM: 2916, p90Duracion: 16.9, p95Extremos: 22.5, tr10_2h_mm: 39.4, tr25_2h_mm: 44.1, dryHours: 18, eventDurationH: 4, recomendacion: "SUDS medio" },
-  { id: "cc_el_bosque", name: "CC El Bosque", code: "P70", zona: "Centro-norte", lat: -0.161691, lon: -78.497363, elevationM: 2903, p90Duracion: 21.7, p95Extremos: 31.2, tr10_2h_mm: 29.5, tr25_2h_mm: 31.3, dryHours: 22, eventDurationH: 4, recomendacion: "SUDS robusto" },
-  { id: "collaloma_medio", name: "Collaloma Medio", code: "P71", zona: "Sur", lat: -0.122609, lon: -78.473210, elevationM: 2968, p90Duracion: 14.2, p95Extremos: 22.2, tr10_2h_mm: 36.9, tr25_2h_mm: 40.4, dryHours: 17, eventDurationH: 4, recomendacion: "SUDS medio" },
-  { id: "colinas_alto", name: "Colinas del Alto", code: "P72", zona: "Sur (ladera)", lat: -0.102834, lon: -78.523052, elevationM: 3088, p90Duracion: 14.1, p95Extremos: 22.9, tr10_2h_mm: 45.6, tr25_2h_mm: 53.1, dryHours: 20, eventDurationH: 3, recomendacion: "SUDS medio" },
+  { id: "rumihurco",      name: "Rumihurco - Machángara", code: "P03", zona: "Sur (cuenca Machángara)",   lat: -0.130678, lon: -78.526703, elevationM: 3245, p90Duracion: 20.1, p95Extremos: 30.3, tr2_mm: 33.5,  tr5_mm: 38.3,  tr10_mm: 41.5,  tr25_mm: 45.5,  int_tr2: 16.8, int_tr5: 19.2, int_tr10: 20.7, int_tr25: 22.7, dryHours: 16, eventDurationH: 5, recomendacion: "SUDS robusto",   hietograma: [5.93, 6.43], mesLluvioso: "octubre", lluvia_mes_lluvioso: 182.3, mesSeco: "agosto",  lluvia_mes_seco: 30.6, climatologia: [88.7,106.5,162.1,173.2,114.7,53.0,31.2,30.6,61.1,182.3,76.6,120.8] },
+  { id: "rumipamba",      name: "Rumipamba (Bodegas)",    code: "P08", zona: "Centro",                     lat: -0.180912, lon: -78.509943, elevationM: 3005, p90Duracion: 22.8, p95Extremos: 32.5, tr2_mm: 36.5,  tr5_mm: 42.2,  tr10_mm: 46.0,  tr25_mm: 50.8,  int_tr2: 18.2, int_tr5: 21.1, int_tr10: 23.0, int_tr25: 25.4, dryHours: 20, eventDurationH: 4, recomendacion: "SUDS robusto",   hietograma: [5.60, 8.19], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 222.3, mesSeco: "julio",   lluvia_mes_seco: 32.5, climatologia: [132.5,149.4,222.3,203.7,91.8,68.6,32.6,37.3,57.4,172.9,108.0,160.6] },
+  { id: "inaquito",       name: "Iñaquito (INAMHI)",      code: "P09", zona: "Centro-norte",               lat: -0.178354, lon: -78.487680, elevationM: 2804, p90Duracion: 18.3, p95Extremos: 26.8, tr2_mm: 30.8,  tr5_mm: 36.0,  tr10_mm: 39.5,  tr25_mm: 43.8,  int_tr2: 15.4, int_tr5: 18.0, int_tr10: 19.7, int_tr25: 21.9, dryHours: 17, eventDurationH: 4, recomendacion: "SUDS medio",     hietograma: [3.90, 7.80], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 181.7, mesSeco: "julio",   lluvia_mes_seco: 27.9, climatologia: [96.7,105.9,181.7,106.3,75.9,56.3,27.8,30.2,43.2,138.3,77.9,110.4] },
+  { id: "cumbaya",        name: "Cumbayá",                code: "P13", zona: "Valle de Cumbayá",           lat: -0.213443, lon: -78.429960, elevationM: 2339, p90Duracion: 19.7, p95Extremos: 28.4, tr2_mm: 37.4,  tr5_mm: 42.7,  tr10_mm: 46.2,  tr25_mm: 50.7,  int_tr2: 18.7, int_tr5: 21.4, int_tr10: 23.1, int_tr25: 25.3, dryHours: 23, eventDurationH: 3, recomendacion: "SUDS medio",     hietograma: [7.58, 5.38], mesLluvioso: "abril",   lluvia_mes_lluvioso: 165.8, mesSeco: "julio",   lluvia_mes_seco: 16.6, climatologia: [69.0,83.4,140.7,165.8,49.6,30.8,16.6,16.8,45.7,144.9,77.1,80.8] },
+  { id: "izobamba",       name: "Izobamba",               code: "P16", zona: "Sur (rural)",                lat: -0.365945, lon: -78.555140, elevationM: 3046, p90Duracion: 17.9, p95Extremos: 24.8, tr2_mm: 35.9,  tr5_mm: 44.2,  tr10_mm: 49.7,  tr25_mm: 56.7,  int_tr2: 18.0, int_tr5: 22.1, int_tr10: 24.9, int_tr25: 28.3, dryHours: 15, eventDurationH: 4, recomendacion: "SUDS medio",     hietograma: [6.00, 5.80], mesLluvioso: "abril",   lluvia_mes_lluvioso: 194.1, mesSeco: "agosto",  lluvia_mes_seco: 40.5, climatologia: [92.0,130.3,186.4,194.1,111.1,63.1,41.8,40.5,64.4,144.3,125.2,176.8] },
+  { id: "chillogallo",    name: "Chillogallo",            code: "P22", zona: "Sur",                        lat: -0.278181, lon: -78.585716, elevationM: 3202, p90Duracion: 12.3, p95Extremos: 16.8, tr2_mm: 29.4,  tr5_mm: 41.2,  tr10_mm: 49.1,  tr25_mm: 59.0,  int_tr2: 14.7, int_tr5: 20.6, int_tr10: 24.5, int_tr25: 29.5, dryHours: 16, eventDurationH: 4, recomendacion: "SUDS medio",     hietograma: [4.30, 3.50], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 139.1, mesSeco: "agosto",  lluvia_mes_seco: 39.6, climatologia: [55.0,72.8,139.1,130.8,91.4,53.9,40.3,39.6,45.4,99.6,83.5,100.9] },
+  { id: "atacazo",        name: "Atacazo",                code: "P23", zona: "Sur-occidente (ladera)",     lat: -0.318317, lon: -78.601764, elevationM: 3877, p90Duracion: 16.1, p95Extremos: 22.1, tr2_mm: 26.4,  tr5_mm: 31.9,  tr10_mm: 35.5,  tr25_mm: 40.1,  int_tr2: 13.2, int_tr5: 15.9, int_tr10: 17.7, int_tr25: 20.0, dryHours: 13, eventDurationH: 6, recomendacion: "SUDS medio",     hietograma: [1.10, 8.10], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 194.4, mesSeco: "julio",   lluvia_mes_seco: 49.4, climatologia: [95.6,118.1,194.4,177.1,117.0,57.9,49.4,54.8,59.4,137.6,100.9,123.2] },
+  { id: "san_francisco",  name: "San Francisco",          code: "P27", zona: "Centro histórico",           lat: -0.202191, lon: -78.539685, elevationM: 3551, p90Duracion: 24.1, p95Extremos: 35.1, tr2_mm: 33.7,  tr5_mm: 39.0,  tr10_mm: 42.5,  tr25_mm: 46.9,  int_tr2: 16.8, int_tr5: 19.5, int_tr10: 21.3, int_tr25: 23.5, dryHours: 14, eventDurationH: 5, recomendacion: "SUDS robusto",   hietograma: [2.30,12.30], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 248.7, mesSeco: "julio",   lluvia_mes_seco: 45.5, climatologia: [175.9,203.8,248.7,240.7,142.4,95.1,45.5,52.2,95.6,221.6,119.1,199.2] },
+  { id: "tanque_solanda", name: "Tanque - Solanda",       code: "P56", zona: "Sur",                        lat: -0.281734, lon: -78.530740, elevationM: 2916, p90Duracion: 16.9, p95Extremos: 22.5, tr2_mm: 30.1,  tr5_mm: 35.7,  tr10_mm: 39.4,  tr25_mm: 44.1,  int_tr2: 15.1, int_tr5: 17.9, int_tr10: 19.7, int_tr25: 22.0, dryHours: 18, eventDurationH: 4, recomendacion: "SUDS medio",     hietograma: [6.09, 5.20], mesLluvioso: "abril",   lluvia_mes_lluvioso: 137.5, mesSeco: "junio",   lluvia_mes_seco: 27.7, climatologia: [59.0,72.7,112.5,137.5,77.2,27.7,38.0,39.8,54.3,122.6,60.5,110.6] },
+  { id: "cc_el_bosque",   name: "CC El Bosque",           code: "P70", zona: "Centro-norte",               lat: -0.161691, lon: -78.497363, elevationM: 2903, p90Duracion: 21.7, p95Extremos: 31.2, tr2_mm: 25.9,  tr5_mm: 28.0,  tr10_mm: 29.5,  tr25_mm: 31.3,  int_tr2: 12.9, int_tr5: 14.0, int_tr10: 14.7, int_tr25: 15.7, dryHours: 22, eventDurationH: 4, recomendacion: "SUDS robusto",   hietograma: [7.62, 5.21], mesLluvioso: "marzo",   lluvia_mes_lluvioso: 210.2, mesSeco: "julio",   lluvia_mes_seco: 22.8, climatologia: [109.0,125.6,210.2,170.6,75.4,42.1,22.8,25.9,50.1,142.1,94.6,138.8] },
+  { id: "collaloma_medio",name: "Collaloma Medio",        code: "P71", zona: "Sur",                        lat: -0.122609, lon: -78.473210, elevationM: 2968, p90Duracion: 14.2, p95Extremos: 22.2, tr2_mm: 30.0,  tr5_mm: 34.2,  tr10_mm: 36.9,  tr25_mm: 40.4,  int_tr2: 15.0, int_tr5: 17.1, int_tr10: 18.5, int_tr25: 20.2, dryHours: 17, eventDurationH: 4, recomendacion: "SUDS medio",     hietograma: [6.99, 2.60], mesLluvioso: "marzo",   lluvia_mes_lluvioso:  79.6, mesSeco: "agosto",  lluvia_mes_seco: 14.7, climatologia: [32.6,40.0,79.6,66.4,30.5,31.0,19.0,14.7,15.6,50.7,22.7,42.8] },
+  { id: "colinas_alto",   name: "Colinas del Alto",       code: "P72", zona: "Sur (ladera)",               lat: -0.102834, lon: -78.523052, elevationM: 3088, p90Duracion: 14.1, p95Extremos: 22.9, tr2_mm: 30.8,  tr5_mm: 39.7,  tr10_mm: 45.6,  tr25_mm: 53.1,  int_tr2: 15.4, int_tr5: 19.9, int_tr10: 22.8, int_tr25: 26.5, dryHours: 20, eventDurationH: 3, recomendacion: "SUDS medio",     hietograma: [1.30, 8.80], mesLluvioso: "marzo",   lluvia_mes_lluvioso:  80.5, mesSeco: "agosto",  lluvia_mes_seco:  9.2, climatologia: [31.8,48.0,80.5,43.7,38.8,28.8,10.2,9.2,24.1,46.4,19.8,27.1] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -97,6 +100,122 @@ const SUDS_TYPES = [
   { id: "deposito", label: "Depósito de infiltración (bajo parqueadero)", icon: "box" },
   { id: "cisterna", label: "Cisterna / tanque de detención", icon: "box" },
 ];
+
+// ---------------------------------------------------------------------------
+// PRECIOS UNITARIOS — Fuente: Lista de Rubros Municipio de Rumiñahui
+// (precios referenciales, actualización junio 2026).
+// Actualizar cada 6 meses según nueva versión del catálogo.
+// ---------------------------------------------------------------------------
+const UNIT_PRICES = {
+  // Biorretención / Jardín de lluvia
+  bio_excavacion:  8.92,   // m3 excavación a mano en tierra
+  bio_abono:       0.41,   // Kg abono orgánico mezclado en sitio
+  bio_arena:      23.63,   // m3 arena gruesa para filtros
+  bio_grava:      20.11,   // m3 grava para drenaje
+  bio_geotextil:   3.10,   // m2 geotextil 2000 NT no tejido
+  bio_dren:        9.92,   // m tubería PVC perforada Ø 110mm
+  bio_plantas:    17.83,   // m2 plantas ornamentales / jardinería
+  bio_desalojo:   10.25,   // m3 desalojo material a 5km
+  // Zanja de infiltración
+  zanja_excavacion: 13.57, // m3 excavación de zanja a mano h=0-2m
+  zanja_arena:    23.02,   // m3 arena en zanja de infiltración
+  zanja_grava:    23.02,   // m3 grava en zanja de infiltración
+  zanja_geotextil:  3.10,  // m2 geotextil 2000 NT no tejido
+  zanja_desalojo: 10.25,   // m3 desalojo material a 5km
+  // Pavimento permeable
+  pav_adoquin:    31.25,   // m2 adoquín ecológico e=10cm f'c=400 inc. cama arena
+  pav_base_grava: 20.11,   // m3 grava para drenaje (base)
+  pav_geotextil:   3.10,   // m2 geotextil 2000 NT no tejido
+  pav_excavacion:  8.92,   // m3 excavación a mano en tierra
+  // Cisterna / tanque
+  cist_excavacion: 16.27,  // m3 excavación a mano en pozo h=0-2m
+  cist_hormigon: 155.34,   // m3 hormigón simple f'c=210 kg/cm2
+  cist_impermeab:  14.63,  // m2 impermeabilización de cisterna
+  cist_encofrado:   7.98,  // m2 encofrado/desencofrado
+  cist_desalojo:   10.25,  // m3 desalojo material a 5km
+  // Depósito de infiltración bajo parqueadero
+  dep_excavacion:  16.27,  // m3 excavación a mano en pozo h=0-2m
+  dep_grava:       23.02,  // m3 grava en zanja de infiltración
+  dep_geotextil:    3.10,  // m2 geotextil 2000 NT no tejido
+  dep_desalojo:    10.25,  // m3 desalojo material a 5km
+};
+
+// Funciones de presupuesto referencial por tipo de SUDS
+// Los precios son referenciales para anteproyecto, no incluyen imprevistos
+// ni utilidad del contratista. Factor de imprevistos sugerido: +20%.
+
+function budgetBioretention(r) {
+  const vol = r.volumeM3;
+  const area = r.areaM2;
+  const perimeter = 2 * (Math.sqrt(area) + Math.sqrt(area)); // estimado
+  const items = [
+    { desc: "Excavación a mano (tierra)",         qty: vol,           unit: "m³", p: UNIT_PRICES.bio_excavacion },
+    { desc: "Arena gruesa para filtros",           qty: vol * 0.3,     unit: "m³", p: UNIT_PRICES.bio_arena },
+    { desc: "Grava para drenaje",                  qty: vol * 0.5,     unit: "m³", p: UNIT_PRICES.bio_grava },
+    { desc: "Abono orgánico (sustrato)",           qty: area * 40,     unit: "Kg", p: UNIT_PRICES.bio_abono },
+    { desc: "Geotextil 2000 NT",                   qty: area + perimeter * r.pondingDepth, unit: "m²", p: UNIT_PRICES.bio_geotextil },
+    { desc: "Tubería PVC perforada Ø110mm (dren)", qty: Math.sqrt(area), unit: "m",  p: UNIT_PRICES.bio_dren },
+    { desc: "Plantas / jardinería",                qty: area,          unit: "m²", p: UNIT_PRICES.bio_plantas },
+    { desc: "Desalojo de material (5 km)",         qty: vol,           unit: "m³", p: UNIT_PRICES.bio_desalojo },
+  ];
+  return calcBudget(items);
+}
+
+function budgetTrench(r) {
+  const vol = r.width * r.depth * r.length;
+  const perimGeotextil = 2 * (r.width + r.depth) * r.length;
+  const items = [
+    { desc: "Excavación de zanja a mano (h=0-2m)", qty: vol,            unit: "m³", p: UNIT_PRICES.zanja_excavacion },
+    { desc: "Arena en zanja de infiltración",       qty: vol * 0.3,     unit: "m³", p: UNIT_PRICES.zanja_arena },
+    { desc: "Grava en zanja de infiltración",       qty: vol * 0.7,     unit: "m³", p: UNIT_PRICES.zanja_grava },
+    { desc: "Geotextil 2000 NT",                    qty: perimGeotextil, unit: "m²", p: UNIT_PRICES.zanja_geotextil },
+    { desc: "Desalojo de material (5 km)",          qty: vol,            unit: "m³", p: UNIT_PRICES.zanja_desalojo },
+  ];
+  return calcBudget(items);
+}
+
+function budgetPermeable(r, areaDisp) {
+  const baseVol = areaDisp * r.baseDepth;
+  const items = [
+    { desc: "Excavación a mano (tierra)",    qty: baseVol,    unit: "m³", p: UNIT_PRICES.pav_excavacion },
+    { desc: "Adoquín ecológico e=10cm",      qty: areaDisp,   unit: "m²", p: UNIT_PRICES.pav_adoquin },
+    { desc: "Base de grava para drenaje",    qty: baseVol,    unit: "m³", p: UNIT_PRICES.pav_base_grava },
+    { desc: "Geotextil 2000 NT",             qty: areaDisp,   unit: "m²", p: UNIT_PRICES.pav_geotextil },
+    { desc: "Desalojo de material (5 km)",   qty: baseVol,    unit: "m³", p: UNIT_PRICES.pav_desalojo || UNIT_PRICES.bio_desalojo },
+  ];
+  return calcBudget(items);
+}
+
+function budgetCistern(r) {
+  const wallArea = 2 * Math.PI * (r.diameter / 2) * r.heightAssumed;
+  const baseArea = Math.PI * (r.diameter / 2) ** 2;
+  const concVol = (wallArea * 0.15) + (baseArea * 0.15); // e=15cm muros y fondo
+  const items = [
+    { desc: "Excavación en pozo (h=0-2m)",      qty: r.volumeM3,  unit: "m³", p: UNIT_PRICES.cist_excavacion },
+    { desc: "Hormigón simple f'c=210 kg/cm2",   qty: concVol,     unit: "m³", p: UNIT_PRICES.cist_hormigon },
+    { desc: "Impermeabilización de cisterna",   qty: wallArea + baseArea, unit: "m²", p: UNIT_PRICES.cist_impermeab },
+    { desc: "Encofrado/desencofrado",           qty: wallArea,    unit: "m²", p: UNIT_PRICES.cist_encofrado },
+    { desc: "Desalojo de material (5 km)",      qty: r.volumeM3,  unit: "m³", p: UNIT_PRICES.cist_desalojo },
+  ];
+  return calcBudget(items);
+}
+
+function budgetChamber(r) {
+  const vol = r.grossVolumeM3;
+  const perimGeotextil = 2 * ((parseFloat(r.length||5) + parseFloat(r.width||3)) * parseFloat(r.depth||2) + parseFloat(r.length||5) * parseFloat(r.width||3));
+  const items = [
+    { desc: "Excavación en pozo (h=0-2m)",    qty: vol,            unit: "m³", p: UNIT_PRICES.dep_excavacion },
+    { desc: "Grava en zanja de infiltración", qty: vol,            unit: "m³", p: UNIT_PRICES.dep_grava },
+    { desc: "Geotextil 2000 NT",              qty: perimGeotextil, unit: "m²", p: UNIT_PRICES.dep_geotextil },
+    { desc: "Desalojo de material (5 km)",    qty: vol,            unit: "m³", p: UNIT_PRICES.dep_desalojo },
+  ];
+  return calcBudget(items);
+}
+
+function calcBudget(items) {
+  const subtotal = items.reduce((s, i) => s + i.qty * i.p, 0);
+  return { items, subtotal, total: subtotal * 1.20 }; // +20% imprevistos
+}
 
 // ---------------------------------------------------------------------------
 // CALCULATION HELPERS
@@ -224,6 +343,9 @@ export default function SudsApp() {
   const [chamberLength, setChamberLength] = useState("5");
   const [chamberWidth, setChamberWidth] = useState("3");
   const [chamberDepth, setChamberDepth] = useState("2");
+  const [riskTR, setRiskTR] = useState("tr10"); // selector TR para gestión de riesgos
+  const [customRain, setCustomRain] = useState(""); // valor personalizado mm
+  const [techTab, setTechTab] = useState("dimensionamiento"); // "dimensionamiento" | "lluvias" | "metodo"
 
   const station = STATIONS.find((s) => s.id === stationId);
   const surface = SURFACES.find((s) => s.id === surfaceId);
@@ -237,10 +359,20 @@ export default function SudsApp() {
     );
   }, [query]);
 
-  // Datos reales del análisis de lluvias horarias 2020-2026 (FONAG), procesados
-  // por Paulina Lima: P90 = curva de duración (frecuente), P95 = eventos
-  // extremos (riesgo). Ver Analisis_Lluvias_Quito_COMPLETO.xlsx.
-  const rainMm = station ? (scenario === "p90" ? station.p90Duracion : station.p95Extremos) : 0;
+  // Lluvia de diseño activa según escenario seleccionado
+  const rainMm = useMemo(() => {
+    if (!station) return 0;
+    if (customRain && parseFloat(customRain) > 0) return parseFloat(customRain);
+    switch (scenario) {
+      case "p90":   return station.p90Duracion;
+      case "p95":   return station.p95Extremos;
+      case "tr2":   return station.tr2_mm;
+      case "tr5":   return station.tr5_mm;
+      case "tr10":  return station.tr10_mm;
+      case "tr25":  return station.tr25_mm;
+      default:      return station.p90Duracion;
+    }
+  }, [station, scenario, customRain]);
 
   const results = useMemo(() => {
     if (!station || areaNum <= 0) return null;
@@ -255,7 +387,15 @@ export default function SudsApp() {
     const cDepth = parseFloat(chamberDepth) || 2;
     const chamber = checkInfiltrationChamber(volL, cLength, cWidth, cDepth);
     const cist = sizeCistern(volL, station.dryHours);
-    return { volL, bio, perm, trench, chamber, cist };
+    // Presupuestos referenciales
+    const budgets = {
+      biorretencion: budgetBioretention(bio),
+      permeable: budgetPermeable(perm, areaNum),
+      zanja: budgetTrench(trench),
+      deposito: budgetChamber({ ...chamber, length: cLength, width: cWidth, depth: cDepth }),
+      cisterna: budgetCistern(cist),
+    };
+    return { volL, bio, perm, trench, chamber, cist, budgets };
   }, [station, areaNum, rainMm, surface, trenchWidth, trenchDepth, chamberLength, chamberWidth, chamberDepth]);
 
   return (
@@ -353,43 +493,70 @@ export default function SudsApp() {
 
         {/* Step 2: Escenario */}
         {station && (
-          <Section number="02" title={userLevel === "simple" ? "¿Qué tan fuerte es la lluvia que quieres manejar?" : "Escenario de lluvia"}>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <ScenarioCard
-                active={scenario === "p90"}
-                onClick={() => setScenario("p90")}
-                label={userLevel === "simple" ? "Lluvia de todos los días" : "Lluvia frecuente (P90 de eventos)"}
-                desc={
-                  userLevel === "simple"
-                    ? "La lluvia común que cae seguido en tu zona. Útil para que el agua del día a día no se acumule."
-                    : "Percentil 90 del tamaño de los eventos de lluvia completos (no del máximo anual). Control de calidad y volumen — método EPA Stormwater Capture / CIRIA SuDS Manual."
-                }
-                value={`${fmt(rainMm0("p90", station), 0)} mm`}
-              />
-              <ScenarioCard
-                active={scenario === "p95"}
-                onClick={() => setScenario("p95")}
-                label={userLevel === "simple" ? "Lluvia fuerte (riesgo de inundación)" : "Lluvia intensa de riesgo (P95 de eventos)"}
-                desc={
-                  userLevel === "simple"
-                    ? "Una lluvia fuerte que no cae tan seguido, pero que puede causar inundaciones si no estás preparado."
-                    : "Percentil 95 del tamaño de los eventos de lluvia completos. Diseño conservador para protección ante inundación."
-                }
-                value={`${fmt(rainMm0("p95", station), 0)} mm`}
-              />
-            </div>
+          <Section number="02" title={userLevel === "simple" ? "¿Qué tan fuerte es la lluvia que quieres manejar?" : "Lluvia de diseño"}>
+            {userLevel === "simple" ? (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <ScenarioCard active={scenario === "p90"} onClick={() => { setScenario("p90"); setCustomRain(""); }}
+                  label="Lluvia de todos los días"
+                  desc="La lluvia común que cae seguido en tu zona. Útil para que el agua del día a día no se acumule."
+                  value={`${fmt(station.p90Duracion, 0)} mm`} />
+                <ScenarioCard active={scenario === "p95"} onClick={() => { setScenario("p95"); setCustomRain(""); }}
+                  label="Lluvia fuerte (riesgo de inundación)"
+                  desc="Una lluvia fuerte que no cae tan seguido, pero que puede causar inundaciones si no estás preparado."
+                  value={`${fmt(station.p95Extremos, 0)} mm`} />
+              </div>
+            ) : (
+              <div>
+                {/* Grupo 1: SUDS */}
+                <p className="text-xs font-semibold text-[#2F6F5E] uppercase tracking-wider mb-2">
+                  Diseño SUDS — volumen a capturar (P90/P95 de eventos)
+                </p>
+                <div className="grid sm:grid-cols-2 gap-2 mb-4">
+                  <ScenarioCard active={scenario === "p90"} onClick={() => { setScenario("p90"); setCustomRain(""); }}
+                    label="P90 — Control de volumen (90% de eventos capturados)"
+                    desc="Percentil 90 del volumen total de eventos completos. Dimensiona el tamaño del SUDS para manejo cotidiano. Ref: EPA Stormwater Capture / CIRIA SuDS Manual C753."
+                    value={`${fmt(station.p90Duracion, 1)} mm`} />
+                  <ScenarioCard active={scenario === "p95"} onClick={() => { setScenario("p95"); setCustomRain(""); }}
+                    label="P95 — Control ampliado (95% de eventos capturados)"
+                    desc="Percentil 95 del volumen total de eventos. Diseño conservador para zonas con mayor exposición."
+                    value={`${fmt(station.p95Extremos, 1)} mm`} />
+                </div>
+                {/* Grupo 2: TR (Gumbel) */}
+                <p className="text-xs font-semibold text-[#1F2A24]/50 uppercase tracking-wider mb-2">
+                  Gestión de riesgos / alcantarillado — intensidad pico (Gumbel · duración 2h)
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                  {[
+                    { key: "tr2",  label: "TR 2 años",  mm: station.tr2_mm,  hint: "Alcant. domiciliario" },
+                    { key: "tr5",  label: "TR 5 años",  mm: station.tr5_mm,  hint: "Alcant. secundario" },
+                    { key: "tr10", label: "TR 10 años", mm: station.tr10_mm, hint: "Colectores" },
+                    { key: "tr25", label: "TR 25 años", mm: station.tr25_mm, hint: "Infraestructura mayor" },
+                  ].map(({ key, label, mm, hint }) => (
+                    <button key={key} onClick={() => { setScenario(key); setCustomRain(""); }}
+                      className={`text-left rounded-xl border p-3 transition-colors ${scenario === key ? "border-[#2F6F5E] bg-[#2F6F5E]/10" : "border-[#1F2A24]/10 bg-white hover:border-[#2F6F5E]/40"}`}>
+                      <div className="font-medium text-xs">{label}</div>
+                      <div className="font-display text-lg font-semibold text-[#2F6F5E]">{fmt(mm, 1)} mm</div>
+                      <div className="text-xs text-[#1F2A24]/45">{hint}</div>
+                    </button>
+                  ))}
+                </div>
+                {/* Valor personalizado */}
+                <div className="flex items-center gap-3 bg-[#1F2A24]/3 rounded-xl px-4 py-3">
+                  <span className="text-xs text-[#1F2A24]/60 shrink-0">O ingresa tu propia lluvia de diseño:</span>
+                  <input type="number" min="0" placeholder="ej. 60"
+                    value={customRain}
+                    onChange={(e) => { setCustomRain(e.target.value); if (e.target.value) setScenario("custom"); }}
+                    className="w-24 rounded-lg border border-[#1F2A24]/15 bg-white px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-[#2F6F5E]" />
+                  <span className="text-xs text-[#1F2A24]/50">mm</span>
+                </div>
+              </div>
+            )}
             <p className="text-xs text-[#1F2A24]/45 mt-2 flex items-start gap-1.5">
               <Info size={13} className="mt-0.5 shrink-0" />
-              {userLevel === "simple" ? (
-                <>Calculado con datos reales de lluvia horaria 2020-2026 de tu estación, registrados por FONAG.</>
-              ) : (
-                <>
-                  Datos: serie horaria 2020-2026, estación {station.name} ({station.code}), elevación {station.elevationM} m — FONAG. Duración mediana de evento: {station.eventDurationH} h.
-                  {station.tr10_2h_mm && (
-                    <> Referencia adicional (período de retorno, ajuste de Gumbel a 2h): TR10 = {fmt(station.tr10_2h_mm,0)} mm, TR25 = {fmt(station.tr25_2h_mm,0)} mm.</>
-                  )}
-                </>
-              )}
+              {userLevel === "simple"
+                ? "Calculado con datos reales de lluvia horaria 2020-2026 de tu estación, registrados por FONAG."
+                : `Estación: ${station.name} (${station.code}) · Elevación: ${station.elevationM} m · Lluvia activa: ${fmt(rainMm, 1)} mm${customRain ? " (valor personalizado)" : ` (${scenario.toUpperCase()})`}`
+              }
             </p>
           </Section>
         )}
@@ -550,6 +717,15 @@ export default function SudsApp() {
             {sudsId === "deposito" && <ChamberResult r={results.chamber} userLevel={userLevel} />}
             {sudsId === "cisterna" && <CisternResult r={results.cist} userLevel={userLevel} />}
 
+            {/* Presupuesto referencial */}
+            <div className="mt-6 border-t border-[#1F2A24]/10 pt-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-display font-semibold">Presupuesto referencial</span>
+                <span className="text-xs text-[#1F2A24]/45 bg-[#1F2A24]/5 rounded-full px-2 py-0.5">Municipio Rumiñahui 2026</span>
+              </div>
+              <BudgetTable budget={results.budgets[sudsId]} userLevel={userLevel} />
+            </div>
+
             <div className="mt-5 rounded-xl border border-amber-300/50 bg-amber-50 p-4 flex gap-2.5 text-xs text-amber-900">
               <AlertTriangle size={15} className="shrink-0 mt-0.5" />
               <p>
@@ -559,6 +735,219 @@ export default function SudsApp() {
                 }
               </p>
             </div>
+          </Section>
+        )}
+        {/* VISTA TÉCNICA AVANZADA */}
+        {results && userLevel === "tecnico" && station && (
+          <Section number="06" title="Análisis técnico">
+            {/* Tabs */}
+            <div className="flex gap-1 mb-4 bg-[#1F2A24]/5 rounded-xl p-1">
+              {[
+                { key: "lluvias",        label: "Tabla de lluvias" },
+                { key: "estacionalidad", label: "Estacionalidad" },
+                { key: "hietograma",     label: "Hietograma" },
+                { key: "metodo",         label: "Método de cálculo" },
+              ].map(({ key, label }) => (
+                <button key={key} onClick={() => setTechTab(key)}
+                  className={`flex-1 rounded-lg py-2 text-xs font-medium transition-colors ${techTab === key ? "bg-white shadow-sm text-[#1F2A24]" : "text-[#1F2A24]/50 hover:text-[#1F2A24]/80"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab: Tabla de lluvias */}
+            {techTab === "lluvias" && (
+              <div>
+                <p className="text-xs text-[#1F2A24]/50 mb-3">
+                  Todos los escenarios para la estación <strong>{station.name}</strong> · Datos FONAG 2020-2026 · Distribución de Gumbel ajustada a máximos anuales (duración 2h)
+                </p>
+                <div className="overflow-x-auto rounded-xl border border-[#1F2A24]/10 bg-white">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[#1F2A24]/10 bg-[#1F2A24]/3">
+                        <th className="text-left px-4 py-2.5 font-medium text-[#1F2A24]/60">Escenario</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">Lluvia (mm)</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">Intensidad (mm/h)</th>
+                        <th className="text-left px-4 py-2.5 font-medium text-[#1F2A24]/60">Uso</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { label: "P90 eventos (frecuente SUDS)", mm: station.p90Duracion, inth: (station.p90Duracion/station.eventDurationH), uso: "Dimensionamiento SUDS — control de volumen cotidiano", cat: "suds" },
+                        { label: "P95 eventos (conservador SUDS)", mm: station.p95Extremos, inth: (station.p95Extremos/station.eventDurationH), uso: "SUDS en zonas de mayor exposición", cat: "suds" },
+                        { label: "TR 2 años (Gumbel · 2h)", mm: station.tr2_mm, inth: station.int_tr2, uso: "Alcantarillado domiciliario", cat: "tr" },
+                        { label: "TR 5 años (Gumbel · 2h)", mm: station.tr5_mm, inth: station.int_tr5, uso: "Alcantarillado secundario", cat: "tr" },
+                        { label: "TR 10 años (Gumbel · 2h)", mm: station.tr10_mm, inth: station.int_tr10, uso: "Colectores principales", cat: "tr" },
+                        { label: "TR 25 años (Gumbel · 2h)", mm: station.tr25_mm, inth: station.int_tr25, uso: "Infraestructura mayor / puentes", cat: "tr" },
+                      ].map((row, i) => (
+                        <tr key={i} className={`border-b border-[#1F2A24]/5 ${row.cat === "suds" ? "bg-[#2F6F5E]/5" : ""}`}>
+                          <td className="px-4 py-2.5">{row.label}</td>
+                          <td className="px-4 py-2.5 text-right font-medium">{fmt(row.mm, 1)}</td>
+                          <td className="px-4 py-2.5 text-right">{fmt(row.inth, 1)}</td>
+                          <td className="px-4 py-2.5 text-[#1F2A24]/50">{row.uso}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-[#1F2A24]/40 mt-2">
+                  Verde = escenarios SUDS (captura/retención). Blanco = períodos de retorno para diseño convencional (alcantarillado, puentes). Ref: Gumbel (1958), Chow/Maidment/Mays — Applied Hydrology.
+                </p>
+              </div>
+            )}
+
+            {/* Tab: Estacionalidad */}
+            {techTab === "estacionalidad" && (
+              <div>
+                {/* Aviso crítico para cisternas */}
+                {sudsId === "cisterna" && (
+                  <div className="rounded-xl border border-amber-300/50 bg-amber-50 p-4 mb-4 flex gap-2.5 text-xs text-amber-900">
+                    <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-1">⚠ Advertencia de estacionalidad para cisternas</p>
+                      <p>En <strong>{station.mesSeco}</strong> llueve solo {fmt(station.lluvia_mes_seco, 0)} mm promedio — la cisterna puede no llenarse durante semanas. No des por sentado que siempre habrá agua disponible. El SUDS funciona en la temporada lluviosa ({station.mesLluvioso}: {fmt(station.lluvia_mes_lluvioso, 0)} mm), pero necesita un plan de uso para la época seca.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fichas rápidas */}
+                <div className="grid sm:grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-xl bg-[#2F6F5E]/8 border border-[#2F6F5E]/20 p-4">
+                    <div className="text-xs text-[#2F6F5E] font-semibold mb-1">Mes más lluvioso</div>
+                    <div className="font-display text-xl font-semibold capitalize">{station.mesLluvioso}</div>
+                    <div className="text-xs text-[#1F2A24]/55 mt-0.5">{fmt(station.lluvia_mes_lluvioso, 0)} mm promedio</div>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 border border-amber-200/50 p-4">
+                    <div className="text-xs text-amber-700 font-semibold mb-1">Mes más seco</div>
+                    <div className="font-display text-xl font-semibold capitalize">{station.mesSeco}</div>
+                    <div className="text-xs text-[#1F2A24]/55 mt-0.5">{fmt(station.lluvia_mes_seco, 0)} mm promedio</div>
+                  </div>
+                  <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                    <div className="text-xs text-[#1F2A24]/50 font-semibold mb-1">Relación lluv./seco</div>
+                    <div className="font-display text-xl font-semibold">{fmt(station.lluvia_mes_lluvioso / station.lluvia_mes_seco, 1)}×</div>
+                    <div className="text-xs text-[#1F2A24]/55 mt-0.5">más lluvia en {station.mesLluvioso}</div>
+                  </div>
+                </div>
+
+                {/* Gráfico de barras mensual */}
+                <p className="text-xs text-[#1F2A24]/50 mb-2">
+                  Climatología mensual · {station.name} · Lluvia media 2020-2026 (FONAG)
+                </p>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  {(() => {
+                    const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+                    const maxMm = Math.max(...station.climatologia);
+                    const secos = ["junio","julio","agosto","septiembre"];
+                    return (
+                      <div>
+                        <div className="flex items-end gap-1 h-32 mb-1">
+                          {station.climatologia.map((mm, i) => {
+                            const pct = (mm / maxMm) * 100;
+                            const esSeco = secos.includes(meses[i].toLowerCase()) ||
+                              meses[i].toLowerCase().startsWith(station.mesSeco.slice(0,3).toLowerCase());
+                            return (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                                <span className="text-xs font-medium" style={{color: esSeco ? "#b45309" : "#0F6E56", fontSize:"8px"}}>{fmt(mm,0)}</span>
+                                <div className="w-full rounded-t" style={{
+                                  height: `${Math.max(pct, 3)}%`,
+                                  background: esSeco ? "#fbbf24" : "#1D9E75",
+                                  opacity: esSeco ? 0.8 : 0.9
+                                }}/>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-1">
+                          {meses.map((m, i) => (
+                            <div key={i} className="flex-1 text-center" style={{fontSize:"8px", color: "var(--color-text-secondary)"}}>
+                              {m}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-4 mt-3 text-xs text-[#1F2A24]/50">
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-[#1D9E75] inline-block"/>Temporada lluviosa</span>
+                          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400 inline-block"/>Época seca (menor captación)</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <p className="text-xs text-[#1F2A24]/40 mt-2">
+                  La variación estacional es clave para el diseño de cisternas: el sistema acumula agua en la temporada lluviosa y la consume en la época seca. En años con El Niño o La Niña, los valores pueden diferir significativamente del promedio histórico.
+                </p>
+              </div>
+            )}
+
+            {/* Tab: Hietograma */}
+            {techTab === "hietograma" && (
+              <div>
+                <p className="text-xs text-[#1F2A24]/50 mb-3">
+                  Distribución horaria del evento P90 observado · duración 2h · {station.name} · Hietograma real construido a partir de eventos históricos FONAG 2020-2026
+                </p>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-5">
+                  <div className="flex items-end gap-2 h-32 mb-2">
+                    {station.hietograma.map((mm, i) => {
+                      const maxMm = Math.max(...station.hietograma);
+                      const pct = maxMm > 0 ? (mm / maxMm) * 100 : 0;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <span className="text-xs font-medium text-[#2F6F5E]">{fmt(mm, 1)}</span>
+                          <div className="w-full bg-[#2F6F5E] rounded-t" style={{ height: `${pct}%`, minHeight: 4 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-2">
+                    {station.hietograma.map((_, i) => (
+                      <div key={i} className="flex-1 text-center text-xs text-[#1F2A24]/40">h{i + 1}</div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-[#1F2A24]/40 mt-3 text-center">
+                    Lluvia total P90: {fmt(station.p90Duracion, 1)} mm en {station.eventDurationH} h · eje Y en mm/h
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Método de cálculo */}
+            {techTab === "metodo" && (
+              <div className="space-y-4 text-xs text-[#1F2A24]/70 leading-relaxed">
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">1. Volumen de escorrentía</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">V (L) = P (mm) × A (m²) × C</p>
+                  <p>Donde: P = lluvia de diseño seleccionada · A = área aportante · C = coeficiente de escorrentía ({surface.runoffCoef} para {surface.label.toLowerCase()}). Método racional simplificado (NRCS TR-55).</p>
+                  <p className="mt-1 font-medium text-[#2F6F5E]">Resultado actual: {fmt(results.volL / 1000, 3)} m³ ({fmt(results.volL, 0)} L)</p>
+                </div>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">2. Biorretención — área requerida</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">A_bio = V / (d_ponding + d_sustrato × n)</p>
+                  <p>d_ponding = 0.20 m · d_sustrato = 0.45 m · n (porosidad) = 0.30 · Ref: EPA LID Manual / CIRIA SuDS Manual C753.</p>
+                </div>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">3. Zanja / depósito de infiltración</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">L_zanja = V / (ancho × prof × n_grava)</p>
+                  <p>n_grava = 0.35 (porosidad típica de grava). El depósito bajo parqueadero verifica: V_captura = L × A × prof × n ≥ V diseño.</p>
+                </div>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">4. Pavimento permeable</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">e_base = V / (A_pavimento × n_base)</p>
+                  <p>n_base = 0.35. El espesor calculado se limita al rango constructivo típico 0.15–0.60 m.</p>
+                </div>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">5. Cisterna / tanque de detención</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">V_cisterna = V × 1.10 · D = √(4V / π·h)</p>
+                  <p>Factor de seguridad 1.10. Ciclo de vaciado: la cisterna debe vaciarse antes del siguiente evento — se usa el tiempo seco mediano entre eventos ({station.dryHours} h para {station.name}).</p>
+                </div>
+                <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-4">
+                  <p className="font-semibold text-[#1F2A24] mb-1">6. Períodos de retorno (Gumbel)</p>
+                  <p className="font-mono bg-[#1F2A24]/5 rounded px-3 py-2 mb-1">X_T = μ + β·y_T · donde y_T = -ln(-ln(1-1/T))</p>
+                  <p>μ = media · β = σ√6/π · Ajustado a máximos anuales móviles (ventana 2h) de la serie 2020-2026. Ref: Gumbel (1958), Chow/Maidment/Mays — Applied Hydrology.</p>
+                </div>
+                <p className="text-[#1F2A24]/40 text-xs">
+                  Resultados orientativos para anteproyecto. No reemplazan diseño hidráulico detallado ni verificación de ingeniero. Metodología: Paulina Lima · Datos: FONAG (acceso libre).
+                </p>
+              </div>
+            )}
           </Section>
         )}
       </main>
@@ -577,6 +966,64 @@ export default function SudsApp() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function BudgetTable({ budget, userLevel }) {
+  if (!budget) return null;
+  const simple = userLevel === "simple";
+  return (
+    <div>
+      {simple ? (
+        <div className="rounded-xl bg-white border border-[#1F2A24]/10 p-5">
+          <p className="text-sm leading-relaxed">
+            El costo referencial de construcción es de aproximadamente{" "}
+            <strong className="text-[#2F6F5E]">${fmt(budget.total, 0)} USD</strong>{" "}
+            (incluye un 20% de margen para imprevistos). Este valor es solo una guía para planificación — el costo real depende del sitio y del contratista.
+          </p>
+        </div>
+      ) : (
+        <div>
+          <div className="overflow-x-auto rounded-xl border border-[#1F2A24]/10 bg-white">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#1F2A24]/10 bg-[#1F2A24]/3">
+                  <th className="text-left px-4 py-2.5 font-medium text-[#1F2A24]/60">Rubro</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">Cant.</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">Unid.</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">P.Unit. USD</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-[#1F2A24]/60">Total USD</th>
+                </tr>
+              </thead>
+              <tbody>
+                {budget.items.map((item, i) => (
+                  <tr key={i} className="border-b border-[#1F2A24]/5">
+                    <td className="px-4 py-2">{item.desc}</td>
+                    <td className="px-4 py-2 text-right">{fmt(item.qty, 2)}</td>
+                    <td className="px-4 py-2 text-right text-[#1F2A24]/50">{item.unit}</td>
+                    <td className="px-4 py-2 text-right">{fmt(item.p, 2)}</td>
+                    <td className="px-4 py-2 text-right font-medium">{fmt(item.qty * item.p, 2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-[#1F2A24]/15 bg-[#1F2A24]/3">
+                  <td colSpan={4} className="px-4 py-2.5 text-right text-[#1F2A24]/60 text-xs">Subtotal (sin imprevistos)</td>
+                  <td className="px-4 py-2.5 text-right font-medium">${fmt(budget.subtotal, 2)}</td>
+                </tr>
+                <tr className="bg-[#2F6F5E]/8">
+                  <td colSpan={4} className="px-4 py-2.5 text-right font-semibold text-[#2F6F5E] text-xs">Total + 20% imprevistos</td>
+                  <td className="px-4 py-2.5 text-right font-display font-semibold text-[#2F6F5E]">${fmt(budget.total, 2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p className="text-xs text-[#1F2A24]/40 mt-2">
+            Precios referenciales: Lista de Rubros Municipio de Rumiñahui, junio 2026. No incluyen utilidad del contratista ni IVA. Actualizar cada 6 meses.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

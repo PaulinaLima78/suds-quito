@@ -865,10 +865,11 @@ export default function SudsApp() {
         {results && userLevel === "tecnico" && station && (
           <Section number="06" title="Análisis técnico">
             {/* Tabs */}
-            <div className="flex gap-1 mb-4 bg-[#1F2A24]/5 rounded-xl p-1">
+            <div className="flex gap-1 mb-4 bg-[#1F2A24]/5 rounded-xl p-1 flex-wrap">
               {[
                 { key: "lluvias",        label: "Tabla de lluvias" },
                 { key: "estacionalidad", label: "Estacionalidad" },
+                { key: "nino",           label: "El Niño" },
                 { key: "hietograma",     label: "Hietograma" },
                 { key: "metodo",         label: "Método de cálculo" },
               ].map(({ key, label }) => (
@@ -1024,6 +1025,72 @@ export default function SudsApp() {
                 </div>
                 <p className="text-xs text-[#1F2A24]/40 mt-2">
                   La variación estacional es clave para el diseño de cisternas: el sistema acumula agua en la temporada lluviosa y la consume en la época seca. En años con El Niño o La Niña, los valores pueden diferir significativamente del promedio histórico.
+                </p>
+              </div>
+            )}
+
+            {/* Tab: El Niño */}
+            {techTab === "nino" && (
+              <div>
+                <p className="text-xs text-[#1F2A24]/50 mb-3">
+                  Comparación de lluvia anual acumulada 2023 y 2024 vs promedio histórico 2020-2026 · todas las estaciones FONAG · Fuente: INAMHI / FONAG.
+                </p>
+
+                {/* Resumen del patrón */}
+                <div className="rounded-xl border border-amber-200/50 bg-amber-50 p-4 mb-4 text-xs text-amber-900 leading-relaxed">
+                  <p className="font-semibold mb-1">¿Qué muestra El Niño 2023-2024 en Quito?</p>
+                  <p><strong>2023 (El Niño moderado):</strong> efecto mixto — algunas estaciones con exceso (Solanda +47%, CC El Bosque +12%), otras con déficit (Rumihurco -10%, Izobamba -10%). No hubo un patrón uniforme.</p>
+                  <p className="mt-1"><strong>2024 (El Niño con déficit marcado):</strong> la mayoría de estaciones registró menos lluvia que el promedio histórico, con casos extremos como Chillogallo (-50%) y Rumihurco (-43%). Esto confirma que El Niño en la sierra genera <strong>mayor variabilidad e impredecibilidad</strong>, no necesariamente más o menos lluvia.</p>
+                  <p className="mt-1 text-amber-700">Implicación para SUDS: las cisternas diseñadas con el promedio histórico pueden quedar vacías en años como 2024. Se recomienda incluir un factor de seguridad o plan de uso alternativo para época seca.</p>
+                </div>
+
+                {/* Tabla comparativa todas las estaciones */}
+                <div className="overflow-x-auto rounded-xl border border-[#1F2A24]/10 bg-white">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-[#1F2A24]/10 bg-[#1F2A24]/3">
+                        <th className="text-left px-4 py-2.5 font-medium text-[#1F2A24]/60">Estación</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-[#1F2A24]/60">Prom. histórico</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-[#1F2A24]/60">2023</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-[#1F2A24]/60">Anomalía</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-[#1F2A24]/60">2024</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-[#1F2A24]/60">Anomalía</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { name:"Rumihurco - Machángara", prom:1317, v23:1182, v24:756  },
+                        { name:"Rumipamba (Bodegas)",    prom:1582, v23:1764, v24:1311 },
+                        { name:"Iñaquito (INAMHI)",      prom:1154, v23:1186, v24:960  },
+                        { name:"Cumbayá",                prom:1011, v23:1119, v24:944  },
+                        { name:"Izobamba",               prom:1500, v23:1343, v24:1012 },
+                        { name:"Chillogallo",            prom:1043, v23:1086, v24:524  },
+                        { name:"Atacazo",                prom:1412, v23:1502, v24:1342 },
+                        { name:"San Francisco",          prom:1900, v23:1895, v24:1876 },
+                        { name:"Tanque - Solanda",       prom:994,  v23:1462, v24:1092 },
+                        { name:"CC El Bosque",           prom:1329, v23:1490, v24:1108 },
+                      ].map((r, i) => {
+                        const a23 = Math.round((r.v23 - r.prom) / r.prom * 100);
+                        const a24 = Math.round((r.v24 - r.prom) / r.prom * 100);
+                        const color23 = a23 > 5 ? "#15803d" : a23 < -5 ? "#b91c1c" : "#6b7280";
+                        const color24 = a24 > 5 ? "#15803d" : a24 < -5 ? "#b91c1c" : "#6b7280";
+                        const isSelected = STATIONS.find(s => s.name === r.name || r.name.includes(s.name.split(" ")[0]));
+                        return (
+                          <tr key={i} className={`border-b border-[#1F2A24]/5 ${isSelected?.id === station?.id ? "bg-[#2F6F5E]/5 font-medium" : ""}`}>
+                            <td className="px-4 py-2.5">{r.name}</td>
+                            <td className="px-3 py-2.5 text-right text-[#1F2A24]/60">{r.prom} mm</td>
+                            <td className="px-3 py-2.5 text-right">{r.v23} mm</td>
+                            <td className="px-3 py-2.5 text-right font-medium" style={{color:color23}}>{a23 > 0 ? "+" : ""}{a23}%</td>
+                            <td className="px-3 py-2.5 text-right">{r.v24} mm</td>
+                            <td className="px-3 py-2.5 text-right font-medium" style={{color:color24}}>{a24 > 0 ? "+" : ""}{a24}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-[#1F2A24]/40 mt-2">
+                  Verde = exceso vs promedio · Rojo = déficit vs promedio · Promedio calculado sobre años con datos completos (≥10 meses) · Collaloma Medio y Colinas del Alto excluidas por datos incompletos en 2023-2024.
                 </p>
               </div>
             )}

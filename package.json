@@ -1,7 +1,7 @@
 {
   "name": "suds-quito",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Buscador de SUDS por barrio: dimensionamiento preliminar de sistemas urbanos de drenaje sostenible con datos reales de lluvia de Quito.",
   "author": "Paulina Lima",
   "license": "UNLICENSED",

@@ -20,6 +20,7 @@ import {
   budgetChamber,
   budgetCistern,
 } from "./budget.js";
+import { sizeNormTank, budgetNormTank } from "./normaQuito.js";
 
 /**
  * @param {object} c
@@ -32,6 +33,7 @@ import {
  * @param {{width:number, depth:number}} c.trench
  * @param {{length:number, width:number, depth:number}} c.chamber
  * @param {number|null} c.soilK  conductividad del suelo (mm/h)
+ * @param {object} [c.norma]  datos del tanque de retención normativo (ver sizeNormTank)
  */
 export function computeCase(c) {
   const { station, rainMm, area, surface, method } = c;
@@ -48,6 +50,7 @@ export function computeCase(c) {
     deposito: checkInfiltrationChamber(volL, c.chamber.length, c.chamber.width, c.chamber.depth),
     cisterna: sizeCistern(volL, station.dryHours),
   };
+  if (c.norma) sizing.retencion_norma = sizeNormTank({ ...c.norma, area });
 
   const budgets = {
     biorretencion: budgetBioretention(sizing.biorretencion),
@@ -56,6 +59,7 @@ export function computeCase(c) {
     deposito: budgetChamber(sizing.deposito),
     cisterna: budgetCistern(sizing.cisterna),
   };
+  if (sizing.retencion_norma) budgets.retencion_norma = budgetNormTank(sizing.retencion_norma);
 
   const drawdown = {};
   if (c.soilK > 0) {

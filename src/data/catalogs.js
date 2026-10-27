@@ -18,6 +18,7 @@ export const SUDS_TYPES = [
   { id: "zanja", label: "Zanja de infiltración", infiltrates: true },
   { id: "deposito", label: "Depósito de infiltración (bajo parqueadero)", infiltrates: true },
   { id: "cisterna", label: "Cisterna / tanque de detención", infiltrates: false },
+  { id: "retencion_norma", label: "Tanque de retención (norma Quito)", infiltrates: false, norma: true },
 ];
 
 // Conductividad hidráulica saturada típica (mm/h) por textura de suelo.
@@ -27,9 +28,9 @@ export const SUDS_TYPES = [
 // en sitio (en Quito son frecuentes la cangahua y suelos volcánicos compactos).
 export const SOILS = [
   { id: "desconocido", label: "No lo sé (asumir franco)", k: 3.4 },
-  { id: "arena", label: "Arena", k: 117.8 },
-  { id: "arena_franca", label: "Arena franca", k: 29.9 },
-  { id: "franco_arenoso", label: "Franco arenoso", k: 10.9 },
+  { id: "arena", label: "Arena", k: 117.8, granular: true },
+  { id: "arena_franca", label: "Arena franca", k: 29.9, granular: true },
+  { id: "franco_arenoso", label: "Franco arenoso", k: 10.9, granular: true },
   { id: "franco_limoso", label: "Franco limoso", k: 6.5 },
   { id: "franco", label: "Franco", k: 3.4 },
   { id: "franco_arcilloso", label: "Franco arcilloso", k: 1.0 },

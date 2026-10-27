@@ -1,5 +1,24 @@
 # Historial de versiones
 
+## 2.1.0 — octubre de 2026
+
+### Nuevo
+- **Tanque de retención según la norma de Quito:** implementa el *Estándar de
+  recolección y reutilización de agua lluvia* (apéndice del PUGS-DMQ, EPMAPS),
+  al que remite el Art. 26 e) de la Ordenanza Metropolitana 060-2023 de
+  Infraestructura Verde-Azul:
+  - volumen V = (Cu − Co)·I·A/6·T_RET con coeficientes ponderados (Tabla 4);
+  - intensidad con las ecuaciones IDF de la EMAAP-Q (Tabla 3), con estación
+    sugerida según las recomendaciones del estándar;
+  - período de retorno por tipo de ocupación (Tabla 2);
+  - volumen mínimo por área de lote (Tabla 1, mínimo 5 m³);
+  - dimensiones con volumen muerto 0,40 m y borde libre 0,50 m;
+  - diámetros de descarga y desborde (Tablas 5 y 6) y tiempo de vaciado;
+  - aviso de reúso obligatorio (> 12 pisos o > 2500 m² útiles).
+- Memoria de cálculo imprimible con el cálculo normativo paso a paso.
+- Aviso en SUDS de infiltración: el estándar solo permite infiltrar en suelos
+  granulares.
+
 ## 2.0.0 — octubre de 2026
 
 ### Nuevo

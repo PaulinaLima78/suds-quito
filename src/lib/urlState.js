@@ -25,6 +25,18 @@ const KEYS = {
   chamberWidth: "dw",
   chamberDepth: "dd",
   projectName: "proy",
+  normImpFinal: "nif",
+  normImpInitial: "nii",
+  normCoverFinal: "ncf",
+  normCoverInitial: "nci",
+  normImpType: "nit",
+  normOcupacion: "noc",
+  normIdf: "nidf",
+  normDuration: "ndur",
+  normTret: "nret",
+  normHeight: "nh",
+  normPisos: "npis",
+  normAreaUtil: "nau",
 };
 
 export function readUrlState(search = typeof window !== "undefined" ? window.location.search : "") {

@@ -5,7 +5,7 @@ Drenaje Sostenible (SUDS)** en Quito, a partir de datos reales de lluvia de 12
 estaciones del FONAG (2020-2026).
 
 **Idea, metodología y desarrollo:** Paulina Lima · © 2026, todos los derechos reservados.
-**En línea:** https://suds-quito.vercel.app · **Versión:** 2.0.0
+**En línea:** https://suds-quito.vercel.app · **Versión:** 2.1.0
 
 ## Qué hace
 
@@ -16,7 +16,9 @@ estaciones del FONAG (2020-2026).
 3. Calcula el volumen de escorrentía (coeficiente C o número de curva NRCS).
 4. Dimensiona biorretención, pavimento permeable, zanja o depósito de
    infiltración y cisterna; estima el tiempo de vaciado según el suelo.
-5. Entrega presupuesto referencial, análisis técnico (estacionalidad, El Niño,
+5. Calcula el tanque de retención obligatorio según la norma municipal de
+   agua lluvia (OM 060-2023 Verde-Azul y estándar del PUGS).
+6. Entrega presupuesto referencial, análisis técnico (estacionalidad, El Niño,
    hietograma, método) y una memoria de cálculo imprimible.
 
 Dos modos de lectura: **explicación simple** (ciudadanía) y **vista técnica**
@@ -31,9 +33,11 @@ src/
   data/stations.js         12 estaciones FONAG: parámetros de diseño y climatología
   data/catalogs.js         superficies, tipos de SUDS, suelos, escenarios
   data/prices.js           precios unitarios (Rumiñahui, jun. 2026)
+  data/normaQuito.js       tablas del estándar municipal de agua lluvia e IDF EMAAP-Q
   lib/hydrology.js         escorrentía, dimensionamiento, infiltración, Gumbel
   lib/budget.js            presupuesto por tipo de SUDS
   lib/climate.js           lluvia de diseño, IDW, climatología
+  lib/normaQuito.js        tanque de retención normativo
   lib/compute.js           cálculo completo de un caso
   lib/urlState.js          enlace compartible
   lib/calculos.test.js     pruebas automáticas

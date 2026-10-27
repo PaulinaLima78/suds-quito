@@ -26,6 +26,9 @@ import { SudsResult, DrawdownPanel, BudgetTable } from "./components/Results.jsx
 import TechnicalAnalysis from "./components/TechnicalAnalysis.jsx";
 import AboutPanel from "./components/AboutPanel.jsx";
 import Report from "./components/Report.jsx";
+import { NormInputs, NormResult } from "./components/NormTank.jsx";
+import { suggestIdfStation } from "./lib/normaQuito.js";
+import { NORMA_SHORT } from "./data/normaQuito.js";
 import { APP_VERSION } from "./version.js";
 
 const DEFAULTS = {
@@ -48,6 +51,18 @@ const DEFAULTS = {
   chamberWidth: "3",
   chamberDepth: "2",
   projectName: "",
+  normImpFinal: "",
+  normImpInitial: "0",
+  normCoverFinal: "pasto100_plano",
+  normCoverInitial: "pasto100_plano",
+  normImpType: "techo",
+  normOcupacion: "residencial",
+  normIdf: "",
+  normDuration: "30",
+  normTret: "30",
+  normHeight: "1",
+  normPisos: "",
+  normAreaUtil: "",
 };
 
 function initialState() {
@@ -85,6 +100,23 @@ export default function SudsApp() {
   const sudsType = SUDS_TYPES.find((t) => t.id === st.sudsId);
   const areaNum = positive(st.area, 0);
   const rainMm = designRain(station, st.scenario, st.customRain);
+  const isNorma = st.sudsId === "retencion_norma";
+  const suggestedIdf = station ? suggestIdfStation(station.lat, station.lon).id : "inaquito";
+  const norma = useMemo(() => ({
+    impFinal: st.normImpFinal === "" ? areaNum * 0.8 : Math.max(parseFloat(st.normImpFinal) || 0, 0),
+    impInitial: Math.max(parseFloat(st.normImpInitial) || 0, 0),
+    coverFinal: st.normCoverFinal,
+    coverInitial: st.normCoverInitial,
+    imperviousType: st.normImpType,
+    ocupacion: st.normOcupacion,
+    idfId: st.normIdf || suggestedIdf,
+    duration: positive(st.normDuration, 30),
+    tret: positive(st.normTret, 30),
+    usefulHeight: positive(st.normHeight, 1),
+    pisos: parseFloat(st.normPisos) || 0,
+    areaUtil: parseFloat(st.normAreaUtil) || 0,
+  }), [st.normImpFinal, st.normImpInitial, st.normCoverFinal, st.normCoverInitial, st.normImpType, st.normOcupacion,
+       st.normIdf, st.normDuration, st.normTret, st.normHeight, st.normPisos, st.normAreaUtil, suggestedIdf, areaNum]);
 
   const results = useMemo(
     () =>
@@ -102,8 +134,9 @@ export default function SudsApp() {
           depth: positive(st.chamberDepth, 2),
         },
         soilK,
+        norma,
       }),
-    [station, rainMm, areaNum, surface, st.runoffMethod, st.pavementArea, st.trenchWidth, st.trenchDepth, st.chamberLength, st.chamberWidth, st.chamberDepth, soilK]
+    [station, rainMm, areaNum, surface, st.runoffMethod, st.pavementArea, st.trenchWidth, st.trenchDepth, st.chamberLength, st.chamberWidth, st.chamberDepth, soilK, norma]
   );
 
   const pickScenario = (id) => set({ scenario: id, customRain: "" });
@@ -245,6 +278,11 @@ export default function SudsApp() {
                   Elige una de las tarjetas para volver a los escenarios simples.
                 </p>
               )}
+              {isNorma && (
+                <p className="text-xs text-[#2F6F5E] mt-2">
+                  Para el tanque de retención normativo no se usan estos escenarios: la norma exige la lluvia de diseño de las curvas IDF de la EMAAP-Q (paso 04).
+                </p>
+              )}
               <p className="text-xs text-[#1F2A24]/45 mt-2">
                 {simple
                   ? "Calculado con datos reales de lluvia horaria 2020-2026 registrados por FONAG."
@@ -259,14 +297,14 @@ export default function SudsApp() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <NumberField
                   id="area"
-                  label={simple ? "Tamaño de tu techo o patio (m²)" : "Área aportante (m²)"}
+                  label={isNorma ? (simple ? "Tamaño total de tu lote (m²)" : "Área de aporte del lote (m²)") : simple ? "Tamaño de tu techo o patio (m²)" : "Área aportante (m²)"}
                   value={st.area}
                   onChange={(v) => set({ area: v })}
                   step="1"
                   placeholder="Ej: 80"
-                  hint={simple ? "Es el área desde donde cae el agua de lluvia: tu techo, tu patio, o ambos." : undefined}
+                  hint={isNorma ? "Para la norma se usa el área total del lote (permeable + impermeable)." : simple ? "Es el área desde donde cae el agua de lluvia: tu techo, tu patio, o ambos." : undefined}
                 />
-                <div>
+                {!isNorma && <div>
                   <label htmlFor="surface" className="text-xs font-medium text-[#1F2A24]/60 mb-1.5 block">Tipo de superficie</label>
                   <select id="surface" value={st.surfaceId} onChange={(e) => set({ surfaceId: e.target.value })} className={inputCls}>
                     {SURFACES.map((s) => (
@@ -275,9 +313,9 @@ export default function SudsApp() {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div>}
               </div>
-              {!simple && (
+              {!simple && !isNorma && (
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <span className="text-xs text-[#1F2A24]/60">Método de escorrentía:</span>
                   <Toggle small value={st.runoffMethod} onChange={(v) => set({ runoffMethod: v })} options={RUNOFF_METHODS} />
@@ -310,6 +348,7 @@ export default function SudsApp() {
                     zanja: "Una zanja larga y angosta, rellena de piedra, que guarda el agua bajo tierra mientras se filtra poco a poco al suelo.",
                     deposito: "Una caja enterrada bajo el parqueadero, rellena de piedra, que guarda agua de lluvia bajo el piso sin ocupar espacio en superficie.",
                     cisterna: "Un tanque que guarda el agua de lluvia para usarla después, por ejemplo para regar o limpiar.",
+                    retencion_norma: "El tanque que la Municipalidad exige en toda construcción nueva para retener el agua lluvia del lote antes de soltarla a la calle.",
                   }[st.sudsId]}
                 </p>
               )}
@@ -334,6 +373,8 @@ export default function SudsApp() {
                   <NumberField id="dep-prof" label="Profundidad (m)" value={st.chamberDepth} onChange={(v) => set({ chamberDepth: v })} />
                 </div>
               )}
+
+              {isNorma && <NormInputs st={st} set={set} area={areaNum} simple={simple} suggestedIdf={suggestedIdf} />}
 
               {sudsType.infiltrates && (
                 <div className="grid sm:grid-cols-2 gap-4 mt-4">
@@ -365,8 +406,8 @@ export default function SudsApp() {
 
           {/* 05 · Resultados */}
           {results && (
-            <Section number="05" title={simple ? "Lo que necesitas construir" : "Dimensionamiento sugerido"}>
-              <div className="rounded-2xl border border-[#2F6F5E]/25 bg-[#2F6F5E]/[0.06] p-5 mb-4">
+            <Section number="05" title={isNorma ? (simple ? "Lo que exige la norma" : `Tanque de retención · ${NORMA_SHORT}`) : simple ? "Lo que necesitas construir" : "Dimensionamiento sugerido"}>
+              {!isNorma && <div className="rounded-2xl border border-[#2F6F5E]/25 bg-[#2F6F5E]/[0.06] p-5 mb-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[#2F6F5E] mb-1">
                   <Droplets size={16} />
                   {simple ? "Cuánta agua tienes que manejar" : "Volumen de escorrentía de diseño"}
@@ -379,16 +420,25 @@ export default function SudsApp() {
                       ? `NRCS: P = ${fmt(rainMm, 1)} mm, CN = ${surface.cn} → Q = ${fmt(results.runoff.depthMm, 1)} mm × ${fmt(areaNum, 0)} m²`
                       : `${fmt(rainMm, 1)} mm × ${fmt(areaNum, 0)} m² × C ${surface.runoffCoef} (${surface.label.toLowerCase()})`}
                 </div>
-              </div>
+              </div>}
 
-              {results.volL <= 0 ? (
+              {results.volL <= 0 && !isNorma ? (
                 <Notice tone="info">
                   Con esta lluvia y este tipo de superficie no se genera escorrentía (la lluvia no supera la abstracción inicial del método NRCS).
                   Prueba con un escenario más intenso o con el método del coeficiente.
                 </Notice>
               ) : (
                 <>
-                  <SudsResult sudsId={st.sudsId} r={results.sizing[st.sudsId]} simple={simple} />
+                  {isNorma
+                    ? <NormResult r={results.sizing.retencion_norma} simple={simple} />
+                    : <SudsResult sudsId={st.sudsId} r={results.sizing[st.sudsId]} simple={simple} />}
+                  {sudsType.infiltrates && soil && !soil.granular && soil.id !== "medido" && (
+                    <Notice tone="warn" className="mt-3">
+                      {simple
+                        ? "Ojo: la norma municipal de Quito solo permite infiltrar agua lluvia en suelos arenosos o granulares. Con tu tipo de suelo, este sistema necesitará un tubo de salida a la red."
+                        : "El estándar municipal de agua lluvia (PUGS) solo permite la infiltración hacia los acuíferos en suelos de composición permeable, como suelos granulares. Con este suelo, prever descarga regulada a la red."}
+                    </Notice>
+                  )}
                   {sudsType.infiltrates && (
                     soilK > 0 ? (
                       <DrawdownPanel d={results.drawdown[st.sudsId]} dryHours={station.dryHours} soilLabel={soil.label} soilK={soilK} simple={simple} />

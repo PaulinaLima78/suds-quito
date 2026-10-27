@@ -88,6 +88,8 @@ export default function AboutPanel() {
             <li>· Chow, Maidment y Mays (1988) — Applied Hydrology</li>
             <li>· Rawls, Brakensiek y Miller (1983) — parámetros de infiltración Green-Ampt</li>
             <li>· Gumbel (1958) — Statistics of Extremes</li>
+            <li>· Municipio de Quito — OM 060-2023, Infraestructura Verde-Azul</li>
+            <li>· EPMAPS / PUGS — Estándar de recolección y reutilización de agua lluvia (IDF EMAAP-Q)</li>
             <li>· Datos: FONAG (acceso libre) · 12 estaciones · 2020-2026</li>
           </ul>
           <p className="text-xs text-[#1F2A24]/40 mt-4">

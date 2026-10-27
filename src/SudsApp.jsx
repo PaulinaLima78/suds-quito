@@ -13,7 +13,7 @@
 // ---------------------------------------------------------------------------
 import React, { useEffect, useMemo, useState } from "react";
 import { CloudRain, Droplets, Link2, Printer, Check } from "lucide-react";
-import { STATIONS } from "./data/stations.js";
+import { STATIONS, ANALYSIS, analysisOutdated } from "./data/stations.js";
 import { SURFACES, SUDS_TYPES, SOILS, RUNOFF_METHODS } from "./data/catalogs.js";
 import { PRICE_SOURCE } from "./data/prices.js";
 import { designRain, virtualStation } from "./lib/climate.js";
@@ -199,6 +199,15 @@ export default function SudsApp() {
         </div>
 
         {showAbout && <AboutPanel />}
+
+        {analysisOutdated() && (
+          <div className="max-w-5xl mx-auto px-5 pt-4 font-body">
+            <Notice tone="warn">
+              El análisis de lluvias de esta app es de {ANALYSIS.label} y debía actualizarse en {ANALYSIS.nextLabel}.
+              Los resultados siguen siendo orientativos, pero pueden no reflejar los registros más recientes.
+            </Notice>
+          </div>
+        )}
 
         <main className="max-w-5xl mx-auto px-5 py-8 font-body">
           {/* 01 · Ubicación */}
@@ -505,6 +514,7 @@ export default function SudsApp() {
             </div>
             <div className="text-xs text-[#1F2A24]/45 sm:text-right">
               <p>Datos de lluvia: <strong className="text-[#1F2A24]/60">FONAG</strong> (Fondo para la Protección del Agua), acceso libre.</p>
+              <p>Análisis de lluvias: Paulina Lima, {ANALYSIS.label} (serie {ANALYSIS.period}) · próxima actualización: {ANALYSIS.nextLabel}.</p>
               <p>Mapa: © colaboradores de OpenStreetMap.</p>
             </div>
           </div>

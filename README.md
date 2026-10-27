@@ -5,7 +5,7 @@ Drenaje Sostenible (SUDS)** en Quito, a partir de datos reales de lluvia de 12
 estaciones del FONAG (2020-2026).
 
 **Idea, metodología y desarrollo:** Paulina Lima · © 2026, todos los derechos reservados.
-**En línea:** https://suds-quito.vercel.app · **Versión:** 2.1.0
+**En línea:** https://suds-quito.vercel.app · **Versión:** 2.1.1
 
 ## Qué hace
 
@@ -60,8 +60,10 @@ https://suds-quito.vercel.app automáticamente.
 
 ## Mantenimiento
 
-- **Datos de lluvia:** `src/data/stations.js` (generados con el script de R de
-  la autora a partir de `Analisis_Lluvias_Quito_COMPLETO.xlsx`).
+- **Análisis de lluvias (cada año, en junio):** volver a correr el script de R
+  de la autora con los registros nuevos, reemplazar los valores de `STATIONS` en
+  `src/data/stations.js` y actualizar la constante `ANALYSIS` (fecha, período y
+  próxima actualización). Análisis vigente: junio de 2026; próximo: junio de 2027.
 - **Precios:** `src/data/prices.js`, actualizar cada 6 meses.
 - Tras cualquier cambio en cálculos: `npm test`.
 

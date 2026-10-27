@@ -1,5 +1,11 @@
 # Historial de versiones
 
+## 2.1.1 — octubre de 2026
+- Se indica la fecha del análisis de lluvias (junio de 2026, serie 2020-2026) y
+  que se actualiza cada año (próxima: junio de 2027), en la app, el panel
+  «Acerca de», la tabla de lluvias y la memoria de cálculo.
+- Aviso automático en la app cuando vence la fecha de actualización.
+
 ## 2.1.0 — octubre de 2026
 
 ### Nuevo

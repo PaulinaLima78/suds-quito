@@ -45,6 +45,24 @@ export const STATIONS = [
 
 // Estaciones cuyo registro 2020-2026 tiene vacíos importantes (climatología
 // anual < 50 % de la media del resto). Se muestran con aviso en la app.
+// Fecha del análisis de lluvias de la autora y su vigencia. El análisis se
+// actualiza una vez al año con los registros nuevos de las estaciones;
+// al actualizar, cambiar estas tres constantes y los datos de STATIONS.
+export const ANALYSIS = {
+  date: "2026-06-20",          // primera publicación con estos resultados
+  label: "junio de 2026",
+  period: "2020-2026",
+  nextUpdate: "2027-06-30",
+  nextLabel: "junio de 2027",
+};
+
+/** true si ya pasó la fecha prevista de actualización anual del análisis. */
+export function analysisOutdated(today = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const iso = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  return iso > ANALYSIS.nextUpdate;
+}
+
 export const PARTIAL_RECORD_STATIONS = ["collaloma_medio", "colinas_alto"];
 
 // Lluvia anual acumulada (mm) — tabla comparativa El Niño 2023-2024.

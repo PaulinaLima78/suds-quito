@@ -4,7 +4,7 @@ import { Notice } from "./ui.jsx";
 import { fmt } from "../lib/format.js";
 import { monthsMissing } from "../lib/climate.js";
 import { INFILTRATION } from "../lib/hydrology.js";
-import { STATIONS, NINO_TABLE, MONTHS, PARTIAL_RECORD_STATIONS } from "../data/stations.js";
+import { STATIONS, NINO_TABLE, MONTHS, PARTIAL_RECORD_STATIONS, ANALYSIS } from "../data/stations.js";
 
 const TABS = [
   { key: "lluvias", label: "Tabla de lluvias" },
@@ -60,7 +60,7 @@ function RainTable({ station }) {
     <div>
       <p className={muted}>
         Todos los escenarios para <strong>{station.name}</strong>
-        {station.virtual ? " (valores interpolados por IDW)" : ""} · Datos FONAG 2020-2026 · Gumbel ajustada a máximos anuales (duración 2h)
+        {station.virtual ? " (valores interpolados por IDW)" : ""} · Análisis de lluvias de {ANALYSIS.label} (registros FONAG {ANALYSIS.period}; se actualiza cada año) · Gumbel ajustada a máximos anuales (duración 2h)
       </p>
       <div className="overflow-x-auto rounded-xl border border-[#1F2A24]/10 bg-white">
         <table className="w-full text-xs">

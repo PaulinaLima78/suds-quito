@@ -11,7 +11,7 @@ import { budgetBioretention, budgetCistern, budgetPermeable, calcBudget } from "
 import { idwRainfall, virtualStation, monthsMissing, designRain, haversineKm } from "./climate.js";
 import { computeCase } from "./compute.js";
 import { readUrlState, buildQuery } from "./urlState.js";
-import { STATIONS } from "../data/stations.js";
+import { STATIONS, analysisOutdated } from "../data/stations.js";
 import { SURFACES } from "../data/catalogs.js";
 
 const techo = SURFACES[0];
@@ -186,6 +186,13 @@ describe("datos", () => {
   it("designRain respeta el valor personalizado", () => {
     expect(designRain(byId("cumbaya"), "custom", "60")).toBe(60);
     expect(designRain(byId("cumbaya"), "tr10", "")).toBe(46.2);
+  });
+});
+
+describe("vigencia del análisis", () => {
+  it("vigente en octubre de 2026, vencido en julio de 2027", () => {
+    expect(analysisOutdated(new Date(2026, 9, 27))).toBe(false);
+    expect(analysisOutdated(new Date(2027, 6, 1))).toBe(true);
   });
 });
 

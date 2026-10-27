@@ -1,6 +1,7 @@
 // SUDS Quito · panel "Acerca de" · © 2026 Paulina Lima.
 import React from "react";
 import { APP_VERSION, RELEASE_DATE } from "../version.js";
+import { ANALYSIS } from "../data/stations.js";
 
 export default function AboutPanel() {
   return (
@@ -90,7 +91,7 @@ export default function AboutPanel() {
             <li>· Gumbel (1958) — Statistics of Extremes</li>
             <li>· Municipio de Quito — OM 060-2023, Infraestructura Verde-Azul</li>
             <li>· EPMAPS / PUGS — Estándar de recolección y reutilización de agua lluvia (IDF EMAAP-Q)</li>
-            <li>· Datos: FONAG (acceso libre) · 12 estaciones · 2020-2026</li>
+            <li>· Análisis de lluvias: Paulina Lima, {ANALYSIS.label}, sobre registros FONAG {ANALYSIS.period} (12 estaciones). Se actualiza cada año; próxima actualización: {ANALYSIS.nextLabel}.</li>
           </ul>
           <p className="text-xs text-[#1F2A24]/40 mt-4">
             Versión {APP_VERSION} · {RELEASE_DATE} · © 2026 Paulina Lima. Todos los derechos reservados.

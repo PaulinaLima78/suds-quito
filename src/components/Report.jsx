@@ -10,6 +10,7 @@ import { PRICE_SOURCE } from "../data/prices.js";
 import { INFILTRATION } from "../lib/hydrology.js";
 import { APP_NAME, APP_VERSION, AUTHOR } from "../version.js";
 import { NORMA_REF, DEAD_HEIGHT, FREEBOARD } from "../data/normaQuito.js";
+import { ANALYSIS } from "../data/stations.js";
 
 function Row({ k, v }) {
   return (
@@ -159,7 +160,7 @@ export default function Report({ projectName, station, scenario, rainMm, area, s
       </ul>
       ) : (
       <ul style={{ margin: 0, paddingLeft: 16, fontSize: 10, color: "#333" }}>
-        <li>Datos de lluvia horaria FONAG 2020-2026 (12 estaciones). Percentiles P90/P95 de la lámina de eventos completos; TR por ajuste de Gumbel (serie corta, ~6 años).</li>
+        <li>Análisis de lluvias de la autora, {ANALYSIS.label}, sobre registros horarios {ANALYSIS.period} de 12 estaciones (fuente de los registros: FONAG); se actualiza cada año, próxima actualización {ANALYSIS.nextLabel}. Percentiles P90/P95 de la lámina de eventos completos; TR por ajuste de Gumbel (serie corta, ~6 años).</li>
         <li>Porosidad de grava 0.35; sustrato de biorretención 0.30. Tasas de infiltración tabuladas (Rawls et al., 1983) salvo ensayo en sitio.</li>
         <li>Dimensionamiento por volumen de captura: no verifica caudales pico, rebose ni estabilidad estructural.</li>
         <li>Resultado orientativo para anteproyecto. No reemplaza el diseño hidráulico detallado ni la revisión de un profesional responsable.</li>

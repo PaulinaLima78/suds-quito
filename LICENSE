@@ -1,0 +1,21 @@
+Copyright (c) 2026 Paulina Lima. Todos los derechos reservados.
+
+SUDS Quito — Buscador de SUDS por barrio
+https://suds-quito.vercel.app
+
+Este programa de ordenador (código fuente, código objeto, interfaz,
+metodología de dimensionamiento implementada, textos y documentación) es
+obra original de Paulina Lima y está protegido por el Código Orgánico de la
+Economía Social de los Conocimientos, Creatividad e Innovación (COESCCI) de
+la República del Ecuador y por los tratados internacionales de derecho de
+autor.
+
+Queda prohibida su reproducción, distribución, modificación, comunicación
+pública o transformación, total o parcial, sin autorización previa y por
+escrito de la titular. El uso de la aplicación publicada en línea para
+consulta no otorga ninguna licencia sobre el código.
+
+El código de terceros incluido como dependencia (React, Leaflet, Lucide,
+Tailwind CSS, Vite y otros) conserva sus propias licencias; ver NOTICE.md.
+Los datos de lluvia provienen del FONAG (Fondo para la Protección del Agua)
+y se citan como fuente; no forman parte de la obra.

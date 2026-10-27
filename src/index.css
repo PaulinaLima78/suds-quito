@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* SUDS Quito · estilos globales · © 2026 Paulina Lima */
+.font-display { font-family: 'Fraunces', Georgia, serif; }
+.font-body { font-family: 'Inter', system-ui, sans-serif; }
+
+body { background: #F6F4EE; }
+
+/* Leaflet: que los controles no tapen el encabezado fijo */
+.leaflet-container { font-family: 'Inter', system-ui, sans-serif; }
+
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+  body { background: #fff; }
+}
